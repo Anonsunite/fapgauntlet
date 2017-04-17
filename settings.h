@@ -5,6 +5,8 @@
 
 #include <vector>
 
+static const int PAUSE_LENGTH = 40;
+
 class Settings
 {
 public:

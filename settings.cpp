@@ -29,7 +29,7 @@ Settings::Settings()
         for(std::string s; std::getline(ss, s, ','); hardcodedDescList.push_back(QString::fromStdString(s)))
         {  }
 
-        pause = v.get("pause", 0).asInt() * 80;
+        pause = v.get("pause", 0).asInt() * PAUSE_LENGTH;
         speed = v.get("pulse", 50).asInt();
 
         images = v.get("showImages", true).asBool();
@@ -70,7 +70,7 @@ Settings::~Settings()
                 str += ",";
         }
         json["descriptions"] = str.toStdString();
-        json["pause"] = pause / 80;
+        json["pause"] = pause / PAUSE_LENGTH;
         json["pulse"] = speed;
 
         json["showImages"] = images;

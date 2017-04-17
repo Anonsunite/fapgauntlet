@@ -19,7 +19,7 @@ SettingsWindow::SettingsWindow(Settings& s, QWidget *parent) :
     ui->checkBox->setChecked(settings->saveOptions);
     ui->checkBox_2->setChecked(!settings->loadLastImages.empty());
     ui->checkBox_2->setEnabled(settings->saveOptions);
-    ui->pauseHorizontalSlider->setValue(settings->pause / 80);
+    ui->pauseHorizontalSlider->setValue(settings->pause / PAUSE_LENGTH);
     ui->speedHorizontalSlider->setValue(settings->speed);
 
     QString str;
@@ -81,7 +81,7 @@ void SettingsWindow::on_textEdit_textChanged()
 
 void SettingsWindow::on_pauseHorizontalSlider_sliderReleased()
 {
-    settings->pause = ui->pauseHorizontalSlider->value() * 80;
+    settings->pause = ui->pauseHorizontalSlider->value() * PAUSE_LENGTH;
 }
 
 void SettingsWindow::on_speedHorizontalSlider_sliderReleased()

@@ -173,7 +173,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>8 Seconds</string>
+      <string>4 Seconds</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_6">
@@ -186,7 +186,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>4 Seconds</string>
+      <string>2 Seconds</string>
      </property>
     </widget>
    </widget>
