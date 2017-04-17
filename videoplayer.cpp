@@ -27,7 +27,7 @@ VideoPlayer::~VideoPlayer()
     libvlc_release(_vlcinstance);
 }
 
-void VideoPlayer::playFile(QString file)
+void VideoPlayer::loadFile(QString file)
 {
     _m = libvlc_media_new_path(_vlcinstance, file.toStdString().c_str());
 
@@ -43,6 +43,10 @@ void VideoPlayer::playFile(QString file)
     const int windid = this->winId();
     libvlc_media_player_set_xwindow(_mp, windid);
 #endif
+}
+
+void VideoPlayer::playFile()
+{
     libvlc_media_player_play(_mp);
 }
 

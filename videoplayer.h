@@ -23,7 +23,8 @@ public:
     ~VideoPlayer();
 
 public slots:
-    void playFile(QString file);
+    void loadFile(QString file);
+    void playFile();
     void stop();
     void pause();
     void unpause();

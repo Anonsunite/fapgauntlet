@@ -230,7 +230,8 @@ void MainWindow::DisplayPictures()
         movie = std::move(std::make_unique<QMovie>(currentImage.path()));
         movie->setScaledSize(QSize(desktopRect.width(), desktopRect.height()));
         ui->image->setMovie(&*movie);
-        movie->start();
+
+        QTimer::singleShot(settings.pause, [this](){ movie->start(); });
     }
     else if(currentImage.path().endsWith(".webm", Qt::CaseSensitive))
     {
@@ -239,11 +240,11 @@ void MainWindow::DisplayPictures()
 
         if(!p)
             p = new VideoPlayer(ui->centralWidget);
-        p->show();
         ui->image->setPixmap(QPixmap());
-        p->playFile(currentImage.path());
+        p->loadFile(currentImage.path());
         p->setGeometry(0, 0, desktopRect.width(), desktopRect.height());
-        p->show();
+
+        QTimer::singleShot(settings.pause, [this](){ p->playFile(); p->show(); });
     }
     else
     {
@@ -265,11 +266,11 @@ void MainWindow::DisplayPictures()
 
     currentUpdateRate = static_cast<int>(settings.pulse() * fromSpeed(currentImage.speed()));
 
-    updateTextTimer.setInterval(currentUpdateRate);
+    updateTextTimer.setInterval(currentUpdateRate + settings.pause);
     updateTextTimer.start();
-    animateTextTimer.setInterval(currentUpdateRate / 20);
+    animateTextTimer.setInterval(currentUpdateRate / 20 + settings.pause);
     animateTextTimer.start();
-    displayPicturesTimer.setInterval(currentUpdateRate * currentImage.count());
+    displayPicturesTimer.setInterval(currentUpdateRate * currentImage.count() + settings.pause);
     displayPicturesTimer.start();
 
     ++faps;
@@ -583,9 +584,6 @@ void MainWindow::ShowContextMenu(QPoint pos)
 
 void MainWindow::UpdateText()
 {
-    if(images.empty())
-        return;
-
     QString old = ui->label->text();
     auto splitted = old.split(",");
     const unsigned int oldNumber = splitted[0].toInt();
@@ -686,6 +684,8 @@ void MainWindow::RepositionLabel(bool changePixelSize)
                            desktopRect.height() / 16 - (labelHeight / 2),
                            labelWidth  + 10,
                            labelHeight + 10);
+
+    animateTextTimer.setInterval(currentUpdateRate / 20);
 }
 
 void MainWindow::OnDownloadManagerClosed(bool ok)
@@ -722,13 +722,17 @@ void MainWindow::OnSettingsWindowClosed()
             p->unpause();
         unpause();
 
+        QString old = ui->label->text();
+        auto splitted = old.split(",");
+        const unsigned int oldNumber = splitted[0].toInt();
+
         currentUpdateRate = static_cast<int>(settings.pulse() * fromSpeed(currentImage.speed()));
 
         updateTextTimer.setInterval(currentUpdateRate);
         updateTextTimer.start();
         animateTextTimer.setInterval(currentUpdateRate / 20);
         animateTextTimer.start();
-        displayPicturesTimer.setInterval(currentUpdateRate * currentImage.count());
+        displayPicturesTimer.setInterval(currentUpdateRate * oldNumber);
         displayPicturesTimer.start();
     }
 
