@@ -43,6 +43,7 @@ private slots:
     void downloadNext();
     void addImageFromDownload();
     void threadJsonDownloadDone();
+    void PlayVideo();
 private:
     void initMenu();
     void shuffle();
@@ -87,6 +88,8 @@ private:
     bool save;
 
     std::vector<Image> ignore;
+
+    QTimer playVideoTimer;
 };
 
 #endif // MAINWINDOW_H

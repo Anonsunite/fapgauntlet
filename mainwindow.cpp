@@ -47,7 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
     threadJsonDownloader(nullptr),
     settings(),
     currentImage(""),
-    save(!settings.loadLastImages.empty())
+    save(!settings.loadLastImages.empty()),
+    playVideoTimer()
 {
     ui->setupUi(this);
 
@@ -73,6 +74,7 @@ MainWindow::MainWindow(QWidget *parent) :
     updateTextTimer.setSingleShot(true);
     connect(&updateTextTimer, SIGNAL(timeout()), SLOT(UpdateText()));
     connect(&animateTextTimer, SIGNAL(timeout()), SLOT(RepositionLabel()));
+    connect(&playVideoTimer, SIGNAL(timeout()), SLOT(PlayVideo()));
 
     this->setWindowFlags(this->windowFlags() | Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 
@@ -131,6 +133,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 
     if(event->key() == Qt::Key_Right)
     {
+        playVideoTimer.stop();
         if(!paused)
         {
             updateTextTimer.stop();
@@ -154,6 +157,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
     }
     else if(event->key() == Qt::Key_Left)
     {
+        playVideoTimer.stop();
         if(!paused)
         {
             updateTextTimer.stop();
@@ -199,6 +203,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
         }
         else
         {
+            playVideoTimer.stop();
             pause();
 
             if(isWebm)
@@ -210,6 +215,18 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 void MainWindow::resizeEvent(QResizeEvent *event)
 {
     desktopRect = QRect(QPoint(0, 0), event->size());
+}
+
+void MainWindow::PlayVideo()
+{
+    if(isGif)
+        movie->start();
+
+    if(isWebm)
+    {
+        p->playFile();
+        p->show();
+    }
 }
 
 void MainWindow::DisplayPictures()
@@ -231,7 +248,8 @@ void MainWindow::DisplayPictures()
         movie->setScaledSize(QSize(desktopRect.width(), desktopRect.height()));
         ui->image->setMovie(&*movie);
 
-        QTimer::singleShot(settings.pause, [this](){ movie->start(); });
+        playVideoTimer.setInterval(settings.pause);
+        playVideoTimer.start();
     }
     else if(currentImage.path().endsWith(".webm", Qt::CaseSensitive))
     {
@@ -244,7 +262,8 @@ void MainWindow::DisplayPictures()
         p->loadFile(currentImage.path());
         p->setGeometry(0, 0, desktopRect.width(), desktopRect.height());
 
-        QTimer::singleShot(settings.pause, [this](){ p->playFile(); p->show(); });
+        playVideoTimer.setInterval(settings.pause);
+        playVideoTimer.start();
     }
     else
     {
