@@ -9,6 +9,10 @@ Some examples:
 >  - 99, very fast, 1 finger
 >  - 20, very slow, very soft
 
+TO BE MORE EXACT, you need to post what you want such that the regex `([1-9]|[1-9][0-9]|1[0-9][0-9]), (very slow|slow|normal|medium|fast|very fast|extreme?ly fast), [a-zA-Z0-9 ]+` matches. You can check if it matches [here](http://regexr.com/3fpft).
+If it doesn't match, the program will randomly generate the parameters.
+
+
 > The reason for posting these instructions is because it is more fun to follow them than just an ordinary image dump.
 
 So much stays the same, however, with the new FapGauntlet you can:

@@ -780,7 +780,7 @@ void MainWindow::threadJsonDownloadDone()
         QString path = "http://i.4cdn.org/" + QString::fromStdString(d->currentBoard()) + "/" + QString::number(fileId) + extension;
 
         std::string text = sub.get("com", "").asString();
-        std::regex r("([0-9]|[1-9][0-9]|1[0-9][0-9]), (very slow|slow|normal|medium|fast|very fast|extreme?ly fast), [a-zA-Z0-9 ]+", std::regex::ECMAScript);
+        std::regex r("([1-9]|[1-9][0-9]|1[0-9][0-9]), (very slow|slow|normal|medium|fast|very fast|extreme?ly fast), [a-zA-Z0-9 ]+", std::regex::ECMAScript);
         std::smatch match;
 
         if(std::regex_search(text, match, r))
