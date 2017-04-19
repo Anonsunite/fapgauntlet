@@ -55,13 +55,13 @@ Speed textToSpeed(QString z)
         return Speed::VERY_SLOW;
     else if(s == "slow")
         return Speed::SLOW;
-    else if(s == "medium")
+    else if(s == "medium" || s == "normal")
         return Speed::MEDIUM;
     else if(s == "fast")
         return Speed::FAST;
     else if(s == "very fast")
         return Speed::VERY_FAST;
-    else if(s == "extremly fast")
+    else if(s == "extremly fast" || s == "extremely fast")
         return Speed::EXTREMLY_FAST;
     else
         assert(false);
