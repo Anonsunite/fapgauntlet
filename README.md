@@ -29,7 +29,28 @@ So here is the link to the github repository: (eep revisiting, I'll update this 
 [github.com/Anonsunite/fapgauntlet](https://github.com/Anonsunite/fapgauntlet)
 
 Sadly, installation will surely be a bit more of a hell than for the old version (which was fucking buggy on my machine!!) since I didn't use Python but C++. You'll need the VLC library and Qt with webengine and webenginewidgets installed. Since I didn't use Windows for a long time, I hope some based anon(s) will help me making installation process on Windows or any other machine less painfull.
-Anyways, open a terminal, dear GNU/Linux user.
+Anyways, open a terminal, dear GNU/Linux user, if you have the following dependencies installed:
+```
+libvlc
+libQt5WebEngine
+libQt5WebEngineWidgets
+libQt5WebEngineCore
+libQt5Quick
+libQt5Widgets
+libQt5Gui
+libQt5WebChannel
+libQt5Qml
+libQt5Network
+libQt5Core
+libGL
+libpthread
+libstdc++
+libm
+libgcc_s
+libc
+```
+
+Then do:
 
 1. Clone the github repository using `git clone https://github.com/Anonsunite/fapgauntlet`
 2. Move into the cloned folder
@@ -41,6 +62,7 @@ Anyways, open a terminal, dear GNU/Linux user.
 #### Some minor issues:
 
 The post format must be exactly `(count), (speed), (special)` without any missing comma or whitespace. It may appear anywhere, but well, still pretty gayfaggotretarded. I'll make this more loose in futre versions. The codebase itself *just* (commit: 51a3568) right now is not that clean as well, this has somewhat high priority for me, as it is more or less braindead work to clean this up. Some minor stability issues were seen, but not often. Most unstable thing are those webms, as libvlc is kinda retarded. And although I'll keep on working on this for some time, I'll need a bit help from you guys. For example, in case you found an issue, please report it so I can fix it. (best would be by using github's issue tracker) yaddyaddyadda, there is more work to do.
+In case patreon runs well, I might be able to rewrite this whole thing to have much less dependencies, such that installation is much easier.
 
 ----
 And now enjoy some fucking fapping, guys.
