@@ -1,9 +1,12 @@
 #ifndef QDOWNLOADER_H
 #define QDOWNLOADER_H
 
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
+#include "qdownloaderthread.h"
+
 #include <QObject>
+#include <QUrl>
+
+#include <thread>
 
 class QDownloader : public QObject
 {
@@ -14,15 +17,15 @@ public:
 
     QByteArray data() const;
     QString fileName() const;
+private slots:
+    void emitDownloaded();
 signals:
     void downloaded();
-private slots:
-    void fileDownloaded(QNetworkReply* pReply);
 private:
-    QNetworkAccessManager _webCtrl;
     QUrl _url;
     QByteArray _data;
     bool _saveToFile;
+    qdownloaderthread _thread;
 };
 
 #endif // QDOWNLOADER_H

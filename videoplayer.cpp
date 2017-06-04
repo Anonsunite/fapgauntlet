@@ -2,6 +2,8 @@
 
 #include <functional>
 
+#include <QDebug>
+
 #ifdef Q_WS_X11
 #include <QX11EmbedContainer>
 #endif
@@ -10,12 +12,18 @@ static const char* const vlc_args[] = {  };
 
 
 VideoPlayer::VideoPlayer(QWidget* parent)
-: QWidget(parent),
+:
+#ifdef Q_WS_X11
+   QX11EmbedContainer(parent),
+#else
+   QWidget(parent),
+#endif
   _vlcinstance(libvlc_new(0, vlc_args)),
   _mp(libvlc_media_player_new(_vlcinstance)),
   _m()
 {
-
+    libvlc_video_set_key_input(_mp, false);
+    libvlc_video_set_mouse_input(_mp, false);
 }
 
 //desctructor

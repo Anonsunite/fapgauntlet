@@ -4,13 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui webengine webenginewidgets
+QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+lessThan(QT_MAJOR_VERSION, 5): QT += webkit
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets webengine webenginewidgets
 
 TARGET = FapGauntlet
 TEMPLATE = app
-LIBS += -lvlc
+LIBS += -lvlc -lcurl
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -21,7 +22,8 @@ SOURCES += main.cpp\
     jsoncpp.cpp \
     settingswindow.cpp \
     settings.cpp \
-    runguard.cpp
+    runguard.cpp \
+    qdownloaderthread.cpp
 
 HEADERS  += mainwindow.h \
     image.h \
@@ -32,7 +34,8 @@ HEADERS  += mainwindow.h \
     json/json.h \
     settingswindow.h \
     settings.h \
-    runguard.h
+    runguard.h \
+    qdownloaderthread.h
 
 FORMS    += mainwindow.ui \
     downloadmanager.ui \

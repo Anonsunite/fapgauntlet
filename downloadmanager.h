@@ -3,6 +3,7 @@
 
 #include <QGraphicsDropShadowEffect>
 #include <QMainWindow>
+#include <QTimer>
 #include <QUrl>
 
 #include <memory>
@@ -14,8 +15,15 @@ namespace Ui
 }
 
 class QTreeWidgetItem;
-class QWebEngineView;
 class QDownloader;
+
+#if (QT_VERSION_MAJOR < 5)
+class QWebView;
+using WebViewType = QWebView;
+#else
+class QWebEngineView;
+using WebViewType = QWebEngineView;
+#endif
 
 extern const std::string boardlist[];
 
@@ -36,6 +44,8 @@ public:
 public slots:
     void updateAfterCheckboxClick();
 private slots:
+    void changeDisplayedUrl();
+    void emitRaiseHtml();
     void on_okButton_released();
     void on_verticalSlider_valueChanged(int value);
     void urlChange(QUrl url);
@@ -43,6 +53,8 @@ private slots:
     void handleHTML(QString html);
     void pageLoadingDone(bool b);
     void jsonDownloadDone();
+    void blinkCombo();
+    void stopEffect();
     void on_lineEdit_textChanged(const QString &arg1);
     void on_b_checkBox_clicked();
     void on_y_checkBox_clicked();
@@ -70,13 +82,15 @@ private:
     void setEnabledAll(bool value);
 private:
     Ui::DownloadManager *ui;
-    QWebEngineView* webview;
+    WebViewType* webview;
     std::string pageHtml;
     std::array<std::unique_ptr<QDownloader>, 12> downloaders;
     int downloadersDone;
 
     bool viewFiles;
     QGraphicsDropShadowEffect effect;
+
+    QTimer effectTimer;
 };
 
 #endif // DOWNLOADMANAGER_H

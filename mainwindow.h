@@ -33,7 +33,10 @@ public:
 
     void keyReleaseEvent(QKeyEvent* event);
     void resizeEvent(QResizeEvent *event);
+private:
+    bool eventFilter(QObject* o, QEvent* e);
 private slots:
+    void loadLastImagesSlot();
     void ShowContextMenu(QPoint pos);
     void DisplayPictures();
     void UpdateText();
@@ -44,10 +47,10 @@ private slots:
     void addImageFromDownload();
     void threadJsonDownloadDone();
     void PlayVideo();
+    void pause();
 private:
     void initMenu();
     void shuffle();
-    void pause();
     void unpause();
     void stop();
     void loadImages(QString path);
@@ -67,10 +70,13 @@ private:
     std::vector<Image> images;
 
     float currentUpdateRate;
+    unsigned int AnimationPulses;
     QTimer displayPicturesTimer;
     QTimer updateTextTimer;
     QTimer animateTextTimer;
     int currentPixelSize;
+    int minPixelSize;
+    int maxPixelSize;
     bool increasePixelSize;
     bool paused;
 

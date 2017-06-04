@@ -1,18 +1,22 @@
 #include "qdownloader.h"
-#include <QFile>
+#include "mainwindow.h"
 
 #include <regex>
 
 QDownloader::QDownloader(QUrl url, bool saveToFile, QObject *parent)
     : QObject(parent),
-      _webCtrl(),
       _url(url),
       _data(),
-      _saveToFile(saveToFile)
+      _saveToFile(saveToFile),
+      _thread(url, saveToFile, _data, parent)
 {
-    connect(&_webCtrl, SIGNAL(finished(QNetworkReply*)), this, SLOT(fileDownloaded(QNetworkReply*)));
-    QNetworkRequest request(url);
-    _webCtrl.get(request);
+    connect(&_thread, SIGNAL(finished()), this, SLOT(emitDownloaded()));
+    _thread.start();
+}
+
+void QDownloader::emitDownloaded()
+{
+    emit downloaded();
 }
 
 QByteArray QDownloader::data() const
@@ -27,22 +31,4 @@ QString QDownloader::fileName() const
     auto fileName = std::sregex_iterator(url.begin(), url.end(), r);
     auto str = fileName->str();
     return QString::fromStdString(str);
-}
-
-void QDownloader::fileDownloaded(QNetworkReply *reply)
-{
-    if(!reply->isFinished())
-        return;
-    if(_saveToFile)
-    {
-        QFile file(fileName());
-        file.open(QIODevice::WriteOnly);
-        file.write(reply->readAll());
-        file.close();
-    }
-    else
-        _data = reply->readAll();
-
-    reply->deleteLater();
-    emit downloaded();
 }

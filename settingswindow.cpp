@@ -19,6 +19,7 @@ SettingsWindow::SettingsWindow(Settings& s, QWidget *parent) :
     ui->checkBox->setChecked(settings->saveOptions);
     ui->checkBox_2->setChecked(!settings->loadLastImages.empty());
     ui->checkBox_2->setEnabled(settings->saveOptions);
+    ui->checkBox_3->setChecked(settings->downloadEvenIfInputInvalid);
     ui->pauseHorizontalSlider->setValue(settings->pause / PAUSE_LENGTH);
     ui->speedHorizontalSlider->setValue(settings->speed);
 
@@ -92,4 +93,11 @@ void SettingsWindow::on_speedHorizontalSlider_sliderReleased()
 void SettingsWindow::on_pushButton_clicked()
 {
     close();
+}
+
+void SettingsWindow::on_checkBox_3_clicked()
+{
+    bool checked = ui->checkBox_3->isChecked();
+
+    settings->downloadEvenIfInputInvalid = checked;
 }

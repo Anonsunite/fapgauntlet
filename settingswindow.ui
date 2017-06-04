@@ -216,16 +216,16 @@
      </rect>
     </property>
     <property name="text">
-     <string>Keep local files loaded next time</string>
+     <string>Load files next time again</string>
     </property>
    </widget>
    <widget class="QTextEdit" name="textEdit">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>80</y>
+      <y>100</y>
       <width>411</width>
-      <height>61</height>
+      <height>41</height>
      </rect>
     </property>
     <property name="tabChangesFocus">
@@ -243,7 +243,7 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>60</y>
+      <y>80</y>
       <width>171</width>
       <height>16</height>
      </rect>
@@ -263,6 +263,19 @@ p, li { white-space: pre-wrap; }
     </property>
     <property name="text">
      <string>OK</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_3">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>50</y>
+      <width>231</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Download even if input is invalid</string>
     </property>
    </widget>
   </widget>

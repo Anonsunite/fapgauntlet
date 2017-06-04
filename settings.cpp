@@ -37,6 +37,8 @@ Settings::Settings()
         webms = v.get("showWebms", true).asBool();
 
         fullscreen = v.get("fullscreen", true).asBool();
+
+        downloadEvenIfInputInvalid = v.get("downloadEvenIfInputInvalid", false).asBool();
     }
     else
     {
@@ -78,6 +80,8 @@ Settings::~Settings()
         json["showWebms"] = webms;
 
         json["fullscreen"] = fullscreen;
+
+        json["downloadEvenIfInputInvalid"] = downloadEvenIfInputInvalid;
 
         std::fstream f("config.json", std::ios::out);
         f << json;

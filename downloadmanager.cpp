@@ -5,7 +5,15 @@
 #include "json/json.h"
 
 #include <QTreeWidgetItem>
+
+#if (QT_VERSION_MAJOR < 5)
+#include <QtWebKit/QWebView>
+#include <QtWebKit/QWebFrame>
+#else
 #include <QWebEngineView>
+#include <QWebEnginePage>
+#endif
+
 #include <QMessageBox>
 #include <QTimer>
 
@@ -24,14 +32,17 @@ DownloadManager::DownloadManager(QWidget *parent) :
     pageHtml(),
     downloaders(),
     viewFiles(false),
-    effect()
+    effect(),
+    effectTimer(this)
 {
     ui->setupUi(this);
-    webview = new QWebEngineView(ui->frame);
+    webview = new WebViewType(ui->frame);
 
     connect(webview, SIGNAL(urlChanged(QUrl)), this, SLOT(urlChange(QUrl)));
     connect(this, SIGNAL(raiseHTML(QString)), this, SLOT(handleHTML(QString)));
     connect(webview, SIGNAL(loadFinished(bool)), this, SLOT(pageLoadingDone(bool)));
+    connect(&effectTimer, SIGNAL(timeout()), this, SLOT(blinkCombo()));
+    effectTimer.setInterval(250);
 
     on_pushButton_2_clicked();
     effect.setOffset(0);
@@ -138,17 +149,19 @@ void DownloadManager::urlChange(QUrl url)
     {
         webview->back();
 
-        QTimer::singleShot(50, [this]()
-        {
-            int index = ui->comboBox->findText(webview->url().toDisplayString());
-            bool oldState = ui->comboBox->blockSignals(true);
-            ui->comboBox->setCurrentIndex(index);
-            ui->comboBox->blockSignals(oldState);
-        });
+        QTimer::singleShot(50, this, SLOT(changeDisplayedUrl()));
     }
 
-    QString asString = url.toDisplayString();
+    QString asString = url.toString();
     safelyAddToCombobox(asString);
+}
+
+void DownloadManager::changeDisplayedUrl()
+{
+    int index = ui->comboBox->findText(webview->url().toString());
+    bool oldState = ui->comboBox->blockSignals(true);
+    ui->comboBox->setCurrentIndex(index);
+    ui->comboBox->blockSignals(oldState);
 }
 
 void DownloadManager::pageLoadingDone(bool b)
@@ -168,10 +181,16 @@ void DownloadManager::pageLoadingDone(bool b)
         return;
     }
 
-    QTimer::singleShot(10,[this]() mutable
-    {
-        webview->page()->toHtml([this](const QString& html) mutable { emit raiseHTML(html); });
-    });
+    QTimer::singleShot(10, this, SLOT(emitRaiseHtml()));
+}
+
+void DownloadManager::emitRaiseHtml()
+{
+#if (QT_VERSION_MAJOR < 5)
+    emit raiseHTML(webview->page()->mainFrame()->toHtml());
+#else
+    webview->page()->toHtml([this](const QString& html){ emit raiseHTML(html); });
+#endif
 }
 
 void DownloadManager::on_pushButton_clicked()
@@ -211,14 +230,11 @@ void DownloadManager::allDownloadersDone()
                     int64_t thread = pageJson[j].get("no", 0).asInt64();
                     QString threadNumber = QString::number(thread);
 
-                    QTimer::singleShot(75, [this,threadNumber,i]()
-                    {
-                        QString board = QString::fromStdString(boardlist[i]);
-                        QString url = "http://boards.4chan.org" + board + "thread/" + threadNumber;
-                        webview->setUrl(QUrl(url));
+                    QString board = QString::fromStdString(boardlist[i]);
+                    QString url = "http://boards.4chan.org" + board + "thread/" + threadNumber;
+                    webview->setUrl(QUrl(url));
 
-                        safelyAddToCombobox(url);
-                    });
+                    safelyAddToCombobox(url);
                     ++added;
                 }
             }
@@ -235,8 +251,8 @@ void DownloadManager::allDownloadersDone()
     }
     if(added > 0U)
     {
-        for(int i = 1; i < 11; ++i)
-            QTimer::singleShot(250 * (i-1), [this,i](){effect.setBlurRadius((i % 2 == 0 ? 0.0 : 20.0));});
+        effectTimer.start();
+        QTimer::singleShot(250 * 9, this, SLOT(stopEffect()));
     }
     else
     {
@@ -244,6 +260,21 @@ void DownloadManager::allDownloadersDone()
             on_verticalSlider_valueChanged(0);
     }
     setEnabledAll(true);
+}
+
+void DownloadManager::blinkCombo()
+{
+    qreal radius = effect.blurRadius();
+
+    if(radius < 19.0)
+        effect.setBlurRadius(20.0);
+    else
+        effect.setBlurRadius(0.0);
+}
+
+void DownloadManager::stopEffect()
+{
+    effectTimer.stop();
 }
 
 void DownloadManager::on_lineEdit_textChanged(const QString &)
@@ -347,7 +378,6 @@ void DownloadManager::on_h_checkBox_clicked()
     updateAfterCheckboxClick();
 }
 
-
 void DownloadManager::on_hm_checkBox_clicked()
 {
     if(!enoughBoardsEnabled() && !ui->hm_checkBox->isChecked())
@@ -428,7 +458,7 @@ void DownloadManager::on_pushButton_2_clicked()
             continue;
         }
         downloaders[i] = std::make_unique<QDownloader>(QUrl("http://a.4cdn.org/" + QString::fromStdString(boardlist[i])
-                                                          + "/catalog.json"), false);
+                                                             + "/catalog.json"), false);
         connect(downloaders[i].get(), SIGNAL(downloaded()), this, SLOT(jsonDownloadDone()));
 
         if(single)

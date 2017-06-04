@@ -3,6 +3,8 @@
 
 #include "json/json.h"
 
+#include <curl/curl.h>
+
 #include <QDesktopWidget>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -12,6 +14,7 @@
 #include <QMenu>
 #include <QDir>
 
+#include <algorithm>
 #include <cassert>
 #include <sstream>
 #include <regex>
@@ -26,17 +29,20 @@ MainWindow::MainWindow(QWidget *parent) :
     movie(nullptr),
     d(nullptr),
     s(nullptr),
-    fullScreenAction("Fullscreen"),
-    downloadFromBoards("Download from boards"),
-    displayImages("Display Images"),
-    displayGifs("Display GIFs"),
-    displayWebms("Display WEBMs"),
+    fullScreenAction("Fullscreen", myMenu),
+    downloadFromBoards("Download from boards", myMenu),
+    displayImages("Display Images", myMenu),
+    displayGifs("Display GIFs", myMenu),
+    displayWebms("Display WEBMs", myMenu),
     images(),
     currentUpdateRate(0),
+    AnimationPulses(10),
     displayPicturesTimer(this),
     updateTextTimer(this),
     animateTextTimer(this),
     currentPixelSize(44),
+    minPixelSize(44),
+    maxPixelSize(54),
     increasePixelSize(true),
     paused(false),
     faps(0U),
@@ -51,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
     playVideoTimer()
 {
     ui->setupUi(this);
+    ui->label->setScaledContents(true);
 
     desktopRect = QApplication::desktop()->screenGeometry();
     this->setGeometry(0, 0, desktopRect.width(), desktopRect.height());
@@ -67,7 +74,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->setWindowState(this->windowState() ^ Qt::WindowFullScreen);
 
-    qsrand(static_cast<quint64>(QTime::currentTime().msecsSinceStartOfDay()));
+    qsrand(static_cast<quint64>(QTime::currentTime().msec()));
 
     displayPicturesTimer.setSingleShot(true);
     connect(&displayPicturesTimer, SIGNAL(timeout()), SLOT(DisplayPictures()));
@@ -78,18 +85,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->setWindowFlags(this->windowFlags() | Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 
-    QTimer::singleShot(50, [this]()
-    {
-        if(!settings.loadLastImages.empty())
-        {
-            for(auto a : settings.loadLastImages)
-                loadImages(a);
-        }
-    });
+    QTimer::singleShot(50, this, SLOT(loadLastImagesSlot()));
 
     if(!settings.gifs && !settings.images && !settings.webms)
     {
-        QMessageBox::information(this, "", "Do not try to break me, thanks.", QMessageBox::Ok);
+        QMessageBox::information(this, "", "Do not try to break me, thanks. (delete or re-edit the config file to fix this)", QMessageBox::Ok);
         this->close();
     }
 }
@@ -97,6 +97,7 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     this->hide();
+
     delete ui;
     delete p;
     delete d;
@@ -123,7 +124,24 @@ MainWindow::~MainWindow()
         }
     }
     else
+    {
+        std::vector<Image> all = images;
+        for(auto& a : ignore)
+            images.push_back(a);
+        for(auto& a : all)
+            a.deleteOrNot();
         settings.loadLastImages.clear();
+    }
+}
+
+
+void MainWindow::loadLastImagesSlot()
+{
+    if(!settings.loadLastImages.empty())
+    {
+        for(auto a : settings.loadLastImages)
+            loadImages(a);
+    }
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent* event)
@@ -158,26 +176,23 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
     else if(event->key() == Qt::Key_Left)
     {
         playVideoTimer.stop();
+
+        images.insert(images.begin(), images.back());
+        images.erase(images.end() - 1);
+        images.insert(images.begin(), images.back());
+        images.erase(images.end() - 1);
+
         if(!paused)
         {
             updateTextTimer.stop();
             displayPicturesTimer.stop();
             animateTextTimer.stop();
 
-            images.insert(images.begin(), images.back());
-            images.erase(images.end() - 1);
-            images.insert(images.begin(), images.back());
-            images.erase(images.end() - 1);
-
             displayPicturesTimer.setInterval(10);
             displayPicturesTimer.start();
         }
         else
         {
-            images.insert(images.begin(), images.back());
-            images.erase(images.end() - 1);
-            images.insert(images.begin(), images.back());
-            images.erase(images.end() - 1);
 
             DisplayPictures();
             pause();
@@ -209,7 +224,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
             if(isWebm)
                 p->pause();
         }
-    }
+    }  
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -229,6 +244,28 @@ void MainWindow::PlayVideo()
     }
 }
 
+bool MainWindow::eventFilter(QObject* o, QEvent* e)
+{
+    if(o == (QObject*) p)
+    {
+        if(e->type() == QEvent::Type::KeyRelease)
+            keyReleaseEvent((QKeyEvent*) e);
+        else if(e->type() == QEvent::Type::Resize)
+            resizeEvent((QResizeEvent*) e);
+        else if(e->type() == QEvent::Type::ContextMenu)
+            ShowContextMenu(this->cursor().pos());
+        else if(e->type() == QEvent::Type::MouseButtonRelease)
+        {
+            if(((QMouseEvent*) e)->button() == Qt::RightButton)
+                ShowContextMenu(this->cursor().pos());
+        }
+        else
+            e->ignore();
+        return true;
+    }
+    return QMainWindow::eventFilter(o, e);
+}
+
 void MainWindow::DisplayPictures()
 {
     currentImage = images[0];
@@ -244,30 +281,38 @@ void MainWindow::DisplayPictures()
     if(currentImage.path().endsWith(".gif", Qt::CaseSensitive))
     {
         isGif = true;
+        isWebm = false;
         movie = std::move(std::make_unique<QMovie>(currentImage.path()));
         movie->setScaledSize(QSize(desktopRect.width(), desktopRect.height()));
         ui->image->setMovie(&*movie);
 
-        playVideoTimer.setInterval(settings.pause);
-        playVideoTimer.start();
+        if(!paused)
+        {
+            playVideoTimer.setInterval(settings.pause);
+            playVideoTimer.start();
+        }
     }
     else if(currentImage.path().endsWith(".webm", Qt::CaseSensitive))
     {
         isGif = false;
         isWebm = true;
-
         if(!p)
             p = new VideoPlayer(ui->centralWidget);
         ui->image->setPixmap(QPixmap());
+        p->installEventFilter(this);
         p->loadFile(currentImage.path());
         p->setGeometry(0, 0, desktopRect.width(), desktopRect.height());
 
-        playVideoTimer.setInterval(settings.pause);
-        playVideoTimer.start();
+        if(!paused)
+        {
+            playVideoTimer.setInterval(settings.pause);
+            playVideoTimer.start();
+        }
     }
     else
     {
         isGif = false;
+        isWebm = false;
         //It's a normal image file
         QPixmap pm;
         pm = QPixmap(currentImage.path());
@@ -287,7 +332,7 @@ void MainWindow::DisplayPictures()
 
     updateTextTimer.setInterval(currentUpdateRate + settings.pause);
     updateTextTimer.start();
-    animateTextTimer.setInterval(currentUpdateRate / 20 + settings.pause);
+    animateTextTimer.setInterval(currentUpdateRate / AnimationPulses + settings.pause);
     animateTextTimer.start();
     displayPicturesTimer.setInterval(currentUpdateRate * currentImage.count() + settings.pause);
     displayPicturesTimer.start();
@@ -302,6 +347,7 @@ void MainWindow::ShowContextMenu(QPoint pos)
     if(!myMenu)
         initMenu();
 
+    myMenu->hide();
     QAction* selectedItem = myMenu->exec(globalPos);
     if(selectedItem)
     {
@@ -548,11 +594,8 @@ void MainWindow::ShowContextMenu(QPoint pos)
             displayPicturesTimer.setInterval(10);
             displayPicturesTimer.start();
 
-            if(isWebm)
-            {
-                p->pause();
-                p->hide();
-            }
+            if(paused)
+                QTimer::singleShot(5, this, SLOT(pause()));
         }
         else if(selectedItem->text() == "Download from boards")
         {
@@ -573,6 +616,8 @@ void MainWindow::ShowContextMenu(QPoint pos)
             d->setWindowModality(Qt::WindowModal);
 
             d->show();
+            d->activateWindow();
+            d->raise();
         }
         else if(selectedItem->text() == "Settings")
         {
@@ -593,6 +638,8 @@ void MainWindow::ShowContextMenu(QPoint pos)
             s->setWindowModality(Qt::WindowModal);
 
             s->show();
+            s->activateWindow();
+            s->raise();
         }
         else if(selectedItem->text() == "Patreon")
         {
@@ -668,25 +715,35 @@ void MainWindow::RepositionLabel(bool changePixelSize)
     {
         if(increasePixelSize)
         {
-            if(currentPixelSize < 54)
+            if(currentPixelSize < maxPixelSize)
             {
-                font.setPixelSize(++currentPixelSize);
+                float percents = std::min(currentPixelSize / static_cast<float>(maxPixelSize) + (1.f / AnimationPulses), 1.f);
+                currentPixelSize = static_cast<int>(maxPixelSize * percents);
+                font.setPixelSize(currentPixelSize);
             }
             else
             {
-                font.setPixelSize(--currentPixelSize);
+                float percents = std::max(currentPixelSize / static_cast<float>(minPixelSize) - (1.f / AnimationPulses), 0.9f);
+                currentPixelSize = static_cast<int>(maxPixelSize * percents);
+                font.setPixelSize(currentPixelSize);
+
                 increasePixelSize = false;
             }
         }
         else
         {
-            if(currentPixelSize > 44)
+            if(currentPixelSize > minPixelSize)
             {
-                font.setPixelSize(--currentPixelSize);
+                float percents = std::max(currentPixelSize / static_cast<float>(minPixelSize) - (1.f / AnimationPulses), 0.9f);
+                currentPixelSize = static_cast<int>(minPixelSize * percents);
+                font.setPixelSize(currentPixelSize);
             }
             else
             {
-                font.setPixelSize(++currentPixelSize);
+                float percents = std::min(currentPixelSize / static_cast<float>(maxPixelSize) + (1.f / AnimationPulses), 1.f);
+                currentPixelSize = static_cast<int>(maxPixelSize * percents);
+                font.setPixelSize(currentPixelSize);
+
                 increasePixelSize = true;
             }
         }
@@ -704,7 +761,7 @@ void MainWindow::RepositionLabel(bool changePixelSize)
                            labelWidth  + 10,
                            labelHeight + 10);
 
-    animateTextTimer.setInterval(currentUpdateRate / 20);
+    animateTextTimer.setInterval(currentUpdateRate / AnimationPulses);
 }
 
 void MainWindow::OnDownloadManagerClosed(bool ok)
@@ -749,7 +806,7 @@ void MainWindow::OnSettingsWindowClosed()
 
         updateTextTimer.setInterval(currentUpdateRate);
         updateTextTimer.start();
-        animateTextTimer.setInterval(currentUpdateRate / 20);
+        animateTextTimer.setInterval(currentUpdateRate / AnimationPulses);
         animateTextTimer.start();
         displayPicturesTimer.setInterval(currentUpdateRate * oldNumber);
         displayPicturesTimer.start();
@@ -819,8 +876,11 @@ void MainWindow::threadJsonDownloadDone()
         }
         else
         {
-            //Fail. Randomize the properties
-            toDownload.push(Image(path));
+            if(settings.downloadEvenIfInputInvalid)
+            {
+                //Fail. Randomize the properties
+                toDownload.push(Image(path));
+            }
         }
     }
 
@@ -850,7 +910,7 @@ void MainWindow::pause()
 {
     paused = true;
 
-    currentPixelSize = 44;
+    currentPixelSize = minPixelSize;
     RepositionLabel(false);
 
     QString old = ui->label->text();
@@ -863,7 +923,7 @@ void MainWindow::pause()
 
     updateTextTimer.setInterval(currentUpdateRate);
     displayPicturesTimer.setInterval(currentUpdateRate * num);
-    animateTextTimer.setInterval(currentUpdateRate / 20);
+    animateTextTimer.setInterval(currentUpdateRate / AnimationPulses);
 
     if(isGif)
         ui->image->movie()->setPaused(true);
@@ -919,7 +979,6 @@ void MainWindow::loadImages(QString path)
             images.push_back(Image(path));
         }
     }
-    shuffle();
 
     if(wasEmpty)
     {

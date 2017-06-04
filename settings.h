@@ -25,6 +25,8 @@ public:
     bool webms;
 
     bool fullscreen;
+
+    bool downloadEvenIfInputInvalid;
 };
 
 #endif // SETTIGS_H

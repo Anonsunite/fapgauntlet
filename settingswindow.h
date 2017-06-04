@@ -28,6 +28,8 @@ private slots:
     void on_pauseHorizontalSlider_sliderReleased();
     void on_speedHorizontalSlider_sliderReleased();
     void on_pushButton_clicked();
+    void on_checkBox_3_clicked();
+
 private:
     void parseDescriptions();
 private:
